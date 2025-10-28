@@ -11,3 +11,10 @@ pdfplumber
 pytesseract
 scikit-learn
 gunicorn
+flask
+google-generativeai
+gunicorn
+pandas
+pdfplumber
+pytesseract
+scikit-learn

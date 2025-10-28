@@ -15,7 +15,9 @@ def init_database():
             filename TEXT NOT NULL,
             upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             file_type TEXT,
-            status TEXT DEFAULT 'success'
+            status TEXT DEFAULT 'success',
+            user_question TEXT,
+            ai_answer TEXT
         )
     ''')
     
@@ -29,22 +31,44 @@ def init_database():
             date TEXT,
             purpose TEXT,
             account TEXT,
+            is_anomaly INTEGER DEFAULT 0,
+            anomaly_reasons TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (file_id) REFERENCES uploaded_files (id)
         )
     ''')
     
+    try:
+        cursor.execute('ALTER TABLE uploaded_files ADD COLUMN user_question TEXT')
+    except sqlite3.OperationalError:
+        pass
+    
+    try:
+        cursor.execute('ALTER TABLE uploaded_files ADD COLUMN ai_answer TEXT')
+    except sqlite3.OperationalError:
+        pass
+    
+    try:
+        cursor.execute('ALTER TABLE transactions ADD COLUMN is_anomaly INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass
+    
+    try:
+        cursor.execute('ALTER TABLE transactions ADD COLUMN anomaly_reasons TEXT')
+    except sqlite3.OperationalError:
+        pass
+    
     conn.commit()
     conn.close()
 
-def save_file_and_transactions(filename, file_type, transactions_data):
+def save_file_and_transactions(filename, file_type, transactions_data, user_question=None, ai_answer=None):
     """Сохраняет файл и все его транзакции в базу данных."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
     cursor.execute(
-        'INSERT INTO uploaded_files (filename, file_type) VALUES (?, ?)',
-        (filename, file_type)
+        'INSERT INTO uploaded_files (filename, file_type, user_question, ai_answer) VALUES (?, ?, ?, ?)',
+        (filename, file_type, user_question, ai_answer)
     )
     file_id = cursor.lastrowid
     
@@ -53,10 +77,13 @@ def save_file_and_transactions(filename, file_type, transactions_data):
     
     for transaction in transactions_data:
         if isinstance(transaction, dict) and "error" not in transaction:
+            is_anomaly = 1 if transaction.get("is_anomaly", False) else 0
+            anomaly_reasons = json.dumps(transaction.get("anomaly_reasons", []), ensure_ascii=False)
+            
             cursor.execute('''
                 INSERT INTO transactions 
-                (file_id, inn, counterparty, amount, date, purpose, account)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (file_id, inn, counterparty, amount, date, purpose, account, is_anomaly, anomaly_reasons)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 file_id,
                 transaction.get("ИНН поставщика"),
@@ -64,7 +91,9 @@ def save_file_and_transactions(filename, file_type, transactions_data):
                 transaction.get("Сумма"),
                 transaction.get("Дата"),
                 transaction.get("Назначение платежа"),
-                transaction.get("Счет")
+                transaction.get("Счет"),
+                is_anomaly,
+                anomaly_reasons
             ))
     
     conn.commit()
@@ -129,7 +158,18 @@ def get_file_with_transactions(file_id):
         ORDER BY id
     ''', (file_id,))
     
-    transactions = [dict(row) for row in cursor.fetchall()]
+    transactions = []
+    for row in cursor.fetchall():
+        t = dict(row)
+        if t.get('anomaly_reasons'):
+            try:
+                t['anomaly_reasons'] = json.loads(t['anomaly_reasons'])
+            except (json.JSONDecodeError, TypeError):
+                t['anomaly_reasons'] = []
+        else:
+            t['anomaly_reasons'] = []
+        transactions.append(t)
+    
     conn.close()
     
     file_dict['transactions'] = transactions
