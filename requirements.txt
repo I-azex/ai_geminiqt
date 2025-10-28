@@ -1,0 +1,6 @@
+google-generativeai
+flask
+pandas
+scikit-learn
+pytesseract
+pdfplumber
