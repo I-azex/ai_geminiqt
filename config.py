@@ -1,6 +1,6 @@
 import os
 
-GEMINI_API_KEY = os.environ.get("AIzaSyB1-tjGIIQ9ozvSb-iGaAHW-JTpzZTTVbE")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 UPLOAD_DIR = "data/uploads/"
 OUTPUT_DIR = "data/outputs/"
