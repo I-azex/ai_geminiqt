@@ -4,3 +4,10 @@ pandas
 scikit-learn
 pytesseract
 pdfplumber
+flask
+google-generativeai
+pandas
+pdfplumber
+pytesseract
+scikit-learn
+gunicorn

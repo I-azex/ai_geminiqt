@@ -1,5 +1,6 @@
-# Конфигурация проекта
-GEMINI_API_KEY = "AIzaSyB1-tjGIIQ9ozvSb-iGaAHW-JTpzZTTVbE"  # ← вставь свой ключ Gemini
+import os
+
+GEMINI_API_KEY = os.environ.get("AIzaSyB1-tjGIIQ9ozvSb-iGaAHW-JTpzZTTVbE")
 
 UPLOAD_DIR = "data/uploads/"
 OUTPUT_DIR = "data/outputs/"

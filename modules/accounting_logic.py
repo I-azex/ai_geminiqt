@@ -1,5 +1,8 @@
 def classify_transaction(description: str) -> str:
     """Простейшая логика сопоставления операции и бухгалтерского счёта."""
+    if not description:
+        return "91.02"
+    
     text = description.lower()
     if "счет-фактура" in text:
         return "60.01"
